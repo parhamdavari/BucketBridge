@@ -1,0 +1,57 @@
+version: '3.9'
+
+services:
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio_data:/data
+    networks:
+      - backend
+    ports:
+      - "9001:9001"  # MinIO Console (Web UI)
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_started
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+      - MINIO_BUCKET=${MINIO_BUCKET}
+      - OMS_ACCESS_KEY=${OMS_ACCESS_KEY}
+      - OMS_SECRET_KEY=${OMS_SECRET_KEY}
+    volumes:
+      - ./init:/init:ro
+    networks:
+      - backend
+    entrypoint: ["/bin/sh", "/init/bootstrap.sh"]
+
+  app:
+    build: ./app
+    depends_on:
+      minio:
+        condition: service_started
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      - S3_ENDPOINT=http://minio:9000
+      - S3_BUCKET=${MINIO_BUCKET}
+      - S3_ACCESS_KEY=${OMS_ACCESS_KEY}
+      - S3_SECRET_KEY=${OMS_SECRET_KEY}
+      - S3_REGION=${S3_REGION}
+      - APP_PORT=${APP_PORT}
+    networks:
+      - backend
+    ports:
+      - "8090:8090"
+
+networks:
+  backend:
+
+volumes:
+  minio_data:

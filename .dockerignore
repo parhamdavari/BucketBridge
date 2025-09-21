@@ -1,0 +1,43 @@
+# Git
+.git/
+.gitignore
+
+# Environment files
+.env
+.env.*
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+*.egg-info/
+
+# Documentation
+README.md
+CLAUDE.md
+*.md
+
+# IDE files
+.vscode/
+.idea/
+.claude/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+
+# Test files
+test-*
+*-test.*
+
+# Docker files (not needed in context)
+docker-compose.yml
+Dockerfile
+
+# Init scripts (not needed in app container)
+init/
+
+# MCP files
+.mcp.json
