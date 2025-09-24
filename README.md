@@ -6,6 +6,7 @@ Minimal FastAPI bridge to a private MinIO bucket. Provides upload, download, del
 - Docker Compose stack with MinIO, bootstrapper, and FastAPI app
 - Streamed uploads/downloads so large files do not exhaust memory
 - Opinionated bootstrap script that creates the bucket, user, and policy on startup
+- Container healthchecks and startup retries to ensure MinIO is ready before serving traffic
 
 ## Prerequisites
 - Docker + Docker Compose v2
@@ -18,7 +19,7 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-The API becomes available at `http://localhost:8080` once the bootstrap container finishes.
+The API becomes available at `http://localhost:8080` (or the port set in `APP_PORT`) once the bootstrap container finishes.
 
 ## Configuration
 Environment variables are read from `.env` by Docker Compose.

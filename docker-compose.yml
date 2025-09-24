@@ -7,6 +7,12 @@ services:
     environment:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     volumes:
       - minio_data:/data
     networks:
@@ -18,7 +24,7 @@ services:
     image: minio/mc:latest
     depends_on:
       minio:
-        condition: service_started
+        condition: service_healthy
     environment:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
@@ -35,7 +41,7 @@ services:
     build: ./app
     depends_on:
       minio:
-        condition: service_started
+        condition: service_healthy
       minio-init:
         condition: service_completed_successfully
     environment:
@@ -48,7 +54,15 @@ services:
     networks:
       - backend
     ports:
-      - "8090:8090"
+      - "${APP_PORT}:${APP_PORT}"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          python -c "import os, urllib.request; urllib.request.urlopen('http://localhost:' + os.environ.get('APP_PORT','8080') + '/health')"
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 networks:
   backend:

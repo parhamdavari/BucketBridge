@@ -1,15 +1,40 @@
+import asyncio
+import logging
 import os
 from fastapi import FastAPI, UploadFile, File, HTTPException, Query
 from fastapi.responses import StreamingResponse
-from s3wrap import s3_client
 from botocore.exceptions import ClientError
+from s3wrap import s3_client
+
+
+logger = logging.getLogger("bucketbridge.startup")
 
 
 app = FastAPI(
-    title="MinIO Storage API",
-    description="FastAPI wrapper for MinIO object storage",
+    title="BucketBridge API",
+    description="Minimal FastAPI bridge to a private MinIO bucket",
     version="1.0.0"
 )
+
+
+@app.on_event("startup")
+async def ensure_storage_ready():
+    attempts = int(os.getenv("S3_HEALTH_RETRIES", "10"))
+    backoff = float(os.getenv("S3_HEALTH_BACKOFF", "3"))
+
+    for attempt in range(1, attempts + 1):
+        if s3_client.health_check():
+            return
+
+        logger.warning(
+            "MinIO health check failed (attempt %s/%s); retrying in %ss",
+            attempt,
+            attempts,
+            backoff,
+        )
+        await asyncio.sleep(backoff)
+
+    raise RuntimeError("MinIO health check failed after repeated attempts")
 
 
 @app.post("/files/upload")
