@@ -2,6 +2,7 @@ import os
 import boto3
 from botocore.config import Config
 from boto3.s3.transfer import TransferConfig
+from typing import Dict, Tuple, Optional
 
 
 class S3Wrapper:
@@ -106,6 +107,81 @@ class S3Wrapper:
             'etag': response.get('ETag', '').strip('"'),
             'last_modified': response.get('LastModified')
         }
+
+    def presign_put(
+        self,
+        key: str,
+        expires_in: int,
+        content_type: Optional[str] = None
+    ) -> Tuple[str, Dict[str, str]]:
+        """
+        Generate a presigned PUT URL for uploading an object directly to storage.
+
+        Args:
+            key: S3 object key
+            expires_in: Expiration time in seconds
+            content_type: Optional explicit content type for the upload
+
+        Returns:
+            tuple: (url, headers) suitable for front-end consumption
+        """
+        params = {
+            'Bucket': self.bucket_name,
+            'Key': key,
+        }
+        headers: Dict[str, str] = {}
+
+        if content_type:
+            params['ContentType'] = content_type
+            headers['Content-Type'] = content_type
+
+        url = self.client.generate_presigned_url(
+            'put_object',
+            Params=params,
+            ExpiresIn=expires_in,
+            HttpMethod='PUT'
+        )
+
+        return url, headers
+
+    def presign_get(
+        self,
+        key: str,
+        expires_in: int,
+        content_disposition: Optional[str] = None,
+        response_content_type: Optional[str] = None
+    ) -> Tuple[str, Dict[str, str]]:
+        """
+        Generate a presigned GET URL for downloading an object directly from storage.
+
+        Args:
+            key: S3 object key
+            expires_in: Expiration time in seconds
+            content_disposition: Optional content disposition value
+            response_content_type: Optional override for the response content type
+
+        Returns:
+            tuple: (url, headers) suitable for front-end consumption
+        """
+        params = {
+            'Bucket': self.bucket_name,
+            'Key': key,
+        }
+
+        if content_disposition:
+            params['ResponseContentDisposition'] = content_disposition
+
+        if response_content_type:
+            params['ResponseContentType'] = response_content_type
+
+        url = self.client.generate_presigned_url(
+            'get_object',
+            Params=params,
+            ExpiresIn=expires_in,
+            HttpMethod='GET'
+        )
+
+        return url, {}
 
     def health_check(self):
         """

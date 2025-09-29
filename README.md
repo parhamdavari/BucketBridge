@@ -5,6 +5,7 @@ Minimal FastAPI bridge to a private MinIO bucket. Provides upload, download, del
 ## Highlights
 - Docker Compose stack with MinIO, bootstrapper, and FastAPI app
 - Streamed uploads/downloads so large files do not exhaust memory
+- Presigned upload/download endpoints for direct browser access to the object store
 - Opinionated bootstrap script that creates the bucket, user, and policy on startup
 - Container healthchecks and startup retries to ensure MinIO is ready before serving traffic
 
@@ -46,6 +47,8 @@ Base URL: `http://localhost:8080`
 | `GET` | `/files/{key}` | Stream file download |
 | `DELETE` | `/files/{key}` | Remove object from bucket |
 | `GET` | `/files/{key}/metadata` | Return metadata (length, type, etag, last modified) without streaming the object |
+| `POST` | `/files/presign-upload` | Generate a presigned `PUT` URL so clients can upload directly to MinIO |
+| `POST` | `/files/presign-download` | Generate a presigned `GET` URL for direct downloads |
 | `GET` | `/health` | Verifies connectivity to MinIO |
 
 ### Example Requests
@@ -61,6 +64,22 @@ curl -X DELETE http://localhost:8080/files/README.md
 
 # Inspect metadata without downloading
 curl http://localhost:8080/files/README.md/metadata
+
+# Request an upload URL that expires in 15 minutes
+curl \
+  -X POST http://localhost:8080/files/presign-upload \
+  -H 'Content-Type: application/json' \
+  -d '{
+        "key": "uploads/example.txt",
+        "content_type": "text/plain",
+        "content_length": 1024,
+        "expires_in": 900
+      }'
+
+## Presigned URL Notes
+- Presigned URLs embed the `S3_ENDPOINT` host. Ensure that value points to a hostname or load balancer reachable by any client that consumes the URL (for example `https://storage.example.com`).
+- If you prefer to keep MinIO private, skip the presigned endpoints and keep using the streaming upload/download routes instead.
+- Clients must send the headers included in the presign response verbatim; otherwise MinIO will reject the request.
 ```
 
 ## Development Notes
