@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+from datetime import datetime, timezone
 from fastapi import FastAPI, UploadFile, File, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from botocore.exceptions import ClientError
@@ -129,6 +130,34 @@ async def delete_file(key: str):
         raise HTTPException(status_code=500, detail=f"S3 error: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
+
+
+@app.get("/files/{key}/metadata")
+async def get_file_metadata(key: str):
+    """
+    Retrieve metadata for an existing object without streaming its contents.
+    """
+    try:
+        metadata = s3_client.stat_obj(key)
+
+        last_modified = metadata.get('last_modified')
+        if isinstance(last_modified, datetime):
+            last_modified = last_modified.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+        return {
+            'key': metadata.get('key', key),
+            'content_length': metadata.get('content_length'),
+            'content_type': metadata.get('content_type'),
+            'etag': metadata.get('etag'),
+            'last_modified': last_modified
+        }
+
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'NoSuchKey':
+            raise HTTPException(status_code=404, detail="File not found")
+        raise HTTPException(status_code=500, detail=f"S3 error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Metadata lookup failed: {str(e)}")
 
 
 @app.get("/health")

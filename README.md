@@ -45,6 +45,7 @@ Base URL: `http://localhost:8080`
 | `POST` | `/files/upload` | Multipart upload; optional `key` query parameter to override filename |
 | `GET` | `/files/{key}` | Stream file download |
 | `DELETE` | `/files/{key}` | Remove object from bucket |
+| `GET` | `/files/{key}/metadata` | Return metadata (length, type, etag, last modified) without streaming the object |
 | `GET` | `/health` | Verifies connectivity to MinIO |
 
 ### Example Requests
@@ -57,6 +58,9 @@ curl -o README.copy.md http://localhost:8080/files/README.md
 
 # Remove it again
 curl -X DELETE http://localhost:8080/files/README.md
+
+# Inspect metadata without downloading
+curl http://localhost:8080/files/README.md/metadata
 ```
 
 ## Development Notes

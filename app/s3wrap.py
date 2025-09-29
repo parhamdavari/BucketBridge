@@ -87,6 +87,26 @@ class S3Wrapper:
         """
         self.client.delete_object(Bucket=self.bucket_name, Key=key)
 
+    def stat_obj(self, key: str):
+        """
+        Retrieve object metadata without streaming the contents.
+
+        Args:
+            key: S3 object key
+
+        Returns:
+            dict: Metadata fields describing the stored object
+        """
+        response = self.client.head_object(Bucket=self.bucket_name, Key=key)
+
+        return {
+            'key': key,
+            'content_length': response.get('ContentLength'),
+            'content_type': response.get('ContentType', 'application/octet-stream'),
+            'etag': response.get('ETag', '').strip('"'),
+            'last_modified': response.get('LastModified')
+        }
+
     def health_check(self):
         """
         Perform a simple health check by listing objects in the bucket.
