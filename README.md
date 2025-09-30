@@ -75,8 +75,9 @@ curl \
         "content_length": 1024,
         "expires_in": 900
       }'
+```
 
-## Presigned URL Notes
+### Presigned URL Notes
 - Presigned URLs embed the `S3_ENDPOINT` host. Ensure that value points to a hostname or load balancer reachable by any client that consumes the URL (for example `https://storage.example.com`).
 - If you prefer to keep MinIO private, skip the presigned endpoints and keep using the streaming upload/download routes instead.
 - Clients must send the headers included in the presign response verbatim; otherwise MinIO will reject the request.
@@ -85,11 +86,11 @@ curl \
 - Treat BucketBridge as an internal utility service. Expose the presign endpoints from your primary API (where business logic and authentication already live), then have that API call the wrapper over the private Docker network.
 - By routing presign requests through the main API, you can reuse your existing AAA mechanisms, attach business rules (ownership checks, rate limits, audit logging), and prevent untrusted callers from talking to the wrapper directly.
 - If you must expose the wrapper externally, secure it like any public API: verify JWTs on every request, restrict credentials to the least privilege required, and apply network-level controls (e.g., reverse proxy ACLs or service mesh policies).
-```
 
 ## Development Notes
 - App source lives in `app/main.py`; S3 helper in `app/s3wrap.py`
 - Python dependencies defined in `app/requirements.txt`
 - `init/bootstrap.sh` contains the provisioning logic for the MinIO user and bucket
 
+## Shutdown
 Stop the stack with `docker compose down`. To remove MinIO data as well, add the `-v` flag.
