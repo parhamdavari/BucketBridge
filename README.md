@@ -1,5 +1,8 @@
 # BucketBridge
 
+[![Docker Image](https://github.com/parhamdavari/bucketbridge/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/parhamdavari/bucketbridge/actions/workflows/docker-publish.yml)
+[![GitHub Container Registry](https://img.shields.io/badge/ghcr.io-bucketbridge-blue?logo=docker)](https://github.com/parhamdavari/bucketbridge/pkgs/container/bucketbridge)
+
 Minimal FastAPI bridge to a private MinIO bucket. Provides upload, download, delete, and health endpoints while keeping MinIO off the public network.
 
 ## Highlights
@@ -92,5 +95,33 @@ curl \
 - Python dependencies defined in `app/requirements.txt`
 - `init/bootstrap.sh` contains the provisioning logic for the MinIO user and bucket
 
+## Deployment with Pre-built Image
+
+Instead of building locally, you can use the pre-built multi-architecture image from GitHub Container Registry:
+
+```bash
+# Pull the latest image (supports amd64 and arm64)
+docker pull ghcr.io/parhamdavari/bucketbridge:latest
+
+# Or pull a specific version
+docker pull ghcr.io/parhamdavari/bucketbridge:v1.0.0
+```
+
+Update your `docker-compose.yml` to use the pre-built image:
+
+```yaml
+app:
+  image: ghcr.io/parhamdavari/bucketbridge:latest
+  # Remove the 'build: ./app' line
+  depends_on:
+    minio:
+      condition: service_healthy
+    minio-init:
+      condition: service_completed_successfully
+  environment:
+    # ... your S3 configuration
+```
+
 ## Shutdown
+
 Stop the stack with `docker compose down`. To remove MinIO data as well, add the `-v` flag.

@@ -1,27 +1,44 @@
 # Git
 .git/
 .gitignore
+.gitattributes
 
 # Environment files
 .env
 .env.*
+!.env.example
 
 # Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 venv/
 .venv/
 *.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
 
 # Documentation
 README.md
 CLAUDE.md
+CHANGELOG.md
 *.md
+!app/*.md
 
 # IDE files
 .vscode/
 .idea/
 .claude/
+*.swp
+*.swo
+*~
+.DS_Store
 
 # Logs and temporary files
 *.log
@@ -31,13 +48,27 @@ CLAUDE.md
 # Test files
 test-*
 *-test.*
+tests/
+**/test_*.py
 
 # Docker files (not needed in context)
 docker-compose.yml
-Dockerfile
+docker-compose.*.yml
+Dockerfile*
+!Dockerfile
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.circleci/
+.travis.yml
 
 # Init scripts (not needed in app container)
 init/
 
 # MCP files
 .mcp.json
+
+# Lock files (keep requirements-lock.txt)
+*.lock
+!requirements*.txt
