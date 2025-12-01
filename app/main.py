@@ -205,7 +205,39 @@ async def upload_file(
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
 
-@app.get("/files/{key}")
+@app.get("/files/{key:path}/metadata")
+async def get_file_metadata(key: str):
+    """
+    Retrieve metadata for an existing object without streaming its contents.
+
+    NOTE: This route MUST be defined before /files/{key:path} to ensure proper
+    matching. FastAPI matches routes in definition order, and {key:path} would
+    greedily capture '/metadata' as part of the key.
+    """
+    try:
+        metadata = s3_client.stat_obj(key)
+
+        last_modified = metadata.get('last_modified')
+        if isinstance(last_modified, datetime):
+            last_modified = last_modified.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+        return {
+            'key': metadata.get('key', key),
+            'content_length': metadata.get('content_length'),
+            'content_type': metadata.get('content_type'),
+            'etag': metadata.get('etag'),
+            'last_modified': last_modified
+        }
+
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'NoSuchKey':
+            raise HTTPException(status_code=404, detail="File not found")
+        raise HTTPException(status_code=500, detail=f"S3 error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Metadata lookup failed: {str(e)}")
+
+
+@app.get("/files/{key:path}")
 async def download_file(key: str):
     """
     Download a file from MinIO storage using streaming response.
@@ -242,7 +274,7 @@ async def download_file(key: str):
         raise HTTPException(status_code=500, detail=f"Download failed: {str(e)}")
 
 
-@app.delete("/files/{key}")
+@app.delete("/files/{key:path}")
 async def delete_file(key: str):
     """
     Delete a file from MinIO storage.
@@ -262,34 +294,6 @@ async def delete_file(key: str):
         raise HTTPException(status_code=500, detail=f"S3 error: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
-
-
-@app.get("/files/{key}/metadata")
-async def get_file_metadata(key: str):
-    """
-    Retrieve metadata for an existing object without streaming its contents.
-    """
-    try:
-        metadata = s3_client.stat_obj(key)
-
-        last_modified = metadata.get('last_modified')
-        if isinstance(last_modified, datetime):
-            last_modified = last_modified.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
-
-        return {
-            'key': metadata.get('key', key),
-            'content_length': metadata.get('content_length'),
-            'content_type': metadata.get('content_type'),
-            'etag': metadata.get('etag'),
-            'last_modified': last_modified
-        }
-
-    except ClientError as e:
-        if e.response['Error']['Code'] == 'NoSuchKey':
-            raise HTTPException(status_code=404, detail="File not found")
-        raise HTTPException(status_code=500, detail=f"S3 error: {str(e)}")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Metadata lookup failed: {str(e)}")
 
 
 @app.get("/health")
